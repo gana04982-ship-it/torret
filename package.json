@@ -1,0 +1,30 @@
+{
+  "name": "torret",
+  "version": "1.0.0",
+  "description": "Zero-dependency, human-paced email outbound engine, RFC 5322 in-thread follow-up resolver, and autonomous IMAP inbox sentinel with Google Gemini personalization.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js --live",
+    "send": "node index.js --live",
+    "dry-run": "node index.js --dry-run",
+    "test-self": "node index.js --test-self",
+    "view": "node index.js --view",
+    "sentinel": "node inbox_sentinel.js --scan",
+    "orchestrate": "node chain_orchestrator.js"
+  },
+  "keywords": [
+    "cold-email",
+    "email-automation",
+    "gemini-api",
+    "imap-sentinel",
+    "smtp-client",
+    "rfc5322-threading",
+    "deliverability",
+    "zero-dependency",
+    "outbound-sales",
+    "gmail-agent"
+  ],
+  "author": "Ganesh",
+  "license": "MIT"
+}
