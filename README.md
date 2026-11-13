@@ -1,6 +1,6 @@
 # 🛡️ Torret: Bulletproof Email Agent
 
-> **Zero-dependency, human-paced cold outbound engine, native RFC 5322 in-thread follow-up resolver, and autonomous IMAP inbox sentinel with Google Gemini 1-to-1 personalization.**
+> **Zero-dependency, human-paced cold outbound engine, native RFC 5322 in-thread follow-up resolver, and autonomous IMAP inbox sentinel with AI-powered 1-to-1 personalization.**
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-brightgreen.svg)](https://nodejs.org)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://nodejs.org)
@@ -107,10 +107,10 @@ flowchart TD
 
 ## 🚀 Quick Start
 
-### 1. Requirements & Google APIs
+### 1. Requirements
 * [Node.js](https://nodejs.org/) v18.0.0 or higher.
 * **Google App Password:** A 16-character password generated at [Google Account App Passwords](https://myaccount.google.com/apppasswords) (requires 2-Step Verification enabled).
-* **Google Gemini API Key:** A free API key from [Google AI Studio](https://aistudio.google.com/app/apikey) (used by `generator.js` for dynamic AI copy personalization).
+* **AI API Key (Optional):** Compatible with any standard LLM API (OpenAI, DeepSeek, Groq, Local Ollama). If omitted, Torret uses its built-in zero-dependency algorithmic structural generator.
 
 ### 2. Installation
 Clone the repository:
@@ -129,7 +129,9 @@ Edit `.env` with your credentials:
 ```ini
 GMAIL_USER=your_email@gmail.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-GEMINI_API_KEY=your_gemini_api_key_here
+AI_API_KEY=your_ai_api_key_here
+AI_API_BASE=https://api.openai.com/v1
+AI_MODEL=gpt-4o-mini
 TEST_RECIPIENT=your_email@gmail.com
 
 MIN_DELAY_SECONDS=50

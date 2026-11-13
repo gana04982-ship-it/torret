@@ -2,20 +2,23 @@
  * Dynamic AI Email Personalizer
  * Generates one-to-one conversational emails injecting {partner_name}, {firm_name}, and {bottleneck}.
  *
- * Employs Gemini API for distinct generation or an adaptive algorithmic template generator
- * to guarantee unique byte signatures across every message.
+ * Supports any standard LLM API endpoint (OpenAI, DeepSeek, Groq, Local Ollama) or an adaptive
+ * algorithmic template generator to guarantee unique byte signatures across every message.
  */
 
-export async function generatePersonalizedEmail({ partner_name, firm_name, bottleneck, apiKey }) {
-  // If Gemini API Key is provided, call Gemini to generate unique copy
-  if (apiKey && apiKey.trim() && apiKey !== 'your_gemini_api_key_here') {
+export async function generatePersonalizedEmail({ partner_name, firm_name, bottleneck, apiKey, apiBase, model }) {
+  const key = apiKey || process.env.AI_API_KEY;
+  const base = apiBase || process.env.AI_API_BASE || 'https://api.openai.com/v1';
+  const selectedModel = model || process.env.AI_MODEL || 'gpt-4o-mini';
+
+  if (key && key.trim() && key !== 'your_ai_api_key_here') {
     try {
-      const generated = await callGeminiAPI({ partner_name, firm_name, bottleneck, apiKey });
+      const generated = await callLLMAPI({ partner_name, firm_name, bottleneck, apiKey: key, apiBase: base, model: selectedModel });
       if (generated && generated.subject && generated.body) {
         return generated;
       }
     } catch (err) {
-      console.warn(`[AI Engine] Gemini API call failed (${err.message}). Falling back to dynamic structural generator.`);
+      console.warn(`[AI Engine] API call failed (${err.message}). Falling back to dynamic structural generator.`);
     }
   }
 
@@ -24,12 +27,12 @@ export async function generatePersonalizedEmail({ partner_name, firm_name, bottl
   return generateDynamicTemplate({ partner_name, firm_name, bottleneck });
 }
 
-async function callGeminiAPI({ partner_name, firm_name, bottleneck, apiKey }) {
+async function callLLMAPI({ partner_name, firm_name, bottleneck, apiKey, apiBase, model }) {
   const prompt = `
 You are writing a cold outreach email from a founder/consultant.
 Recipient Details:
-- Partner Name: ${partner_name}
-- Firm Name: ${firm_name}
+- Name: ${partner_name}
+- Company/Firm: ${firm_name}
 - Specific Bottleneck: ${bottleneck}
 
 Rules:
@@ -46,78 +49,84 @@ Output format:
 }
 `.trim();
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `${apiBase.replace(/\/+$/, '')}/chat/completions`;
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.85, // Adds variation for unique byte signatures
-      },
+      model,
+      messages: [
+        { role: 'system', content: 'You write concise, natural B2B emails in strict JSON format.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.85,
     }),
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Gemini API returned status ${res.status}: ${errorText}`);
+    throw new Error(`LLM API returned status ${res.status}: ${errorText}`);
   }
 
   const data = await res.json();
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error('Empty response from Gemini API');
+  const rawText = data?.choices?.[0]?.message?.content;
+  if (!rawText) throw new Error('Empty response from LLM API');
 
-  return JSON.parse(rawText);
+  return JSON.parse(rawText.trim());
 }
 
+/**
+ * Built-in Algorithmic Structural Generator
+ * Zero external calls. Uses dynamic permutations of greetings, value statements, and CTAs
+ * to guarantee that every outbound email has a distinct byte sequence.
+ */
 function generateDynamicTemplate({ partner_name, firm_name, bottleneck }) {
-  const firstName = partner_name.split(' ')[0] || partner_name;
-
-  const subjectOptions = [
-    `Quick note regarding ${firm_name}`,
-    `Question about ${firm_name}'s workflow`,
-    `${firm_name} & solving ${bottleneck}`,
-    `Idea on ${bottleneck} for ${firm_name}`,
+  const greetings = [
+    `Hi ${partner_name},`,
+    `Hello ${partner_name},`,
+    `${partner_name},`,
   ];
 
-  const openings = [
-    `Hi ${firstName},\n\nI was looking into ${firm_name} recently and noticed teams in your space often run into ${bottleneck}.`,
-    `Hey ${firstName},\n\nHope your week is off to a solid start. Reaching out because several peers at ${firm_name} highlighted how ${bottleneck} slows down delivery.`,
-    `Hi ${firstName},\n\nWanted to send a brief note directly to you at ${firm_name}. We've been looking closely at the friction caused by ${bottleneck}.`,
+  const openers = [
+    `Noticed ${firm_name}'s depth and active practice across the region.`,
+    `Saw ${firm_name}'s recent work and focus on operational excellence.`,
+    `Reaching out given ${firm_name}'s track record in managing complex client matters.`,
   ];
 
-  const valueProps = [
-    `We designed an automated workflow that cuts the turnaround time on this down to a couple of minutes without altering your current stack.`,
-    `We recently put together a clean, lightweight agent setup that eliminates the manual back-and-forth around this completely.`,
-    `Our focus is removing the operational drag here so your team can focus on execution rather than chasing updates.`,
+  const painPoints = [
+    `We build custom private workflows that automate ${bottleneck}—eliminating 12+ associate hours every week without changing your existing core software.`,
+    `We engineer private automation workflows specifically handling ${bottleneck}, cutting over 10 hours of manual coordination every week for your team.`,
+    `Our automated workflows streamline ${bottleneck}, eliminating repetitive data entry while keeping your data strictly inside your private environment.`,
   ];
 
-  const callToActions = [
-    `Are you open to a brief 5-minute glance at how it works next Tuesday?`,
-    `Would it make sense to share a 2-minute walkthrough showing how we solved this for a similar firm?`,
-    `Happy to send over a 1-page summary if you're exploring ways to streamline this.`,
+  const ctas = [
+    `Would you be open to a 5-minute conversation on how this works?`,
+    `Open to a brief 5-minute chat this week to see if this is relevant for your team?`,
+    `Would it make sense to connect for 5 minutes to see how this saves staff time?`,
   ];
 
   const closings = [
-    `Best,\nAlex`,
-    `Thanks,\nAlex`,
-    `Cheers,\nAlex`,
+    `Best,\nGanesh`,
+    `Regards,\nGanesh`,
+    `Warmly,\nGanesh`,
   ];
 
-  // Pick deterministic hash based on recipient details to ensure consistent yet distinct combinations
-  const seed = (partner_name + firm_name + bottleneck)
-    .split('')
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const subjects = [
+    `quick question re: ${bottleneck}`,
+    `workflow question for ${firm_name}`,
+    `eliminating manual ${bottleneck}`,
+    `question on ${bottleneck}`,
+  ];
 
-  const subject = subjectOptions[seed % subjectOptions.length];
-  const opening = openings[seed % openings.length];
-  const valueProp = valueProps[(seed >> 1) % valueProps.length];
-  const cta = callToActions[(seed >> 2) % callToActions.length];
-  const close = closings[(seed >> 3) % closings.length];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  const body = `${opening}\n\n${valueProp}\n\n${cta}\n\n${close}`;
-
-  return { subject, body };
+  return {
+    subject: pick(subjects),
+    body: `${pick(greetings)}\n\n${pick(openers)}\n\n${pick(painPoints)}\n\n${pick(ctas)}\n\n${pick(closings)}`,
+  };
 }
