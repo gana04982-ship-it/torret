@@ -19,6 +19,7 @@ load_b2b_*.js
 auto_trigger*.js
 scan_day*.js
 test_*.js
+verify_*.js
 check_status.js
 reset_failed.js
 
