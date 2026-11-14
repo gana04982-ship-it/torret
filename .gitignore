@@ -20,8 +20,10 @@ auto_trigger*.js
 scan_day*.js
 test_*.js
 verify_*.js
-check_status.js
-reset_failed.js
+check_*.js
+reset_*.js
+send_*.js
+sync_*.js
 
 # Runtime data & logs
 *.log
