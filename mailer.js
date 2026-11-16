@@ -194,7 +194,7 @@ function sendEmailDirectSingle({ user, password, to, subject, body, inReplyTo, r
 /**
  * Resilient direct email sender with exponential backoff on transient network faults
  */
-export async function sendEmailDirect(params, maxRetries = 3) {
+export async function sendEmailDirect(params, maxRetries = 5) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await sendEmailDirectSingle(params);
@@ -202,11 +202,17 @@ export async function sendEmailDirect(params, maxRetries = 3) {
       const isTransient =
         err.message.includes('ECONNRESET') ||
         err.message.includes('closed unexpectedly') ||
+        err.message.includes('ended unexpectedly') ||
         err.message.includes('timed out') ||
+        err.message.includes('ETIMEDOUT') ||
+        err.message.includes('ENOTFOUND') ||
+        err.message.includes('EAI_AGAIN') ||
+        err.message.includes('EHOSTUNREACH') ||
+        err.message.includes('ENETUNREACH') ||
         err.message.includes('Connection Error');
 
       if (attempt < maxRetries && isTransient) {
-        const waitMs = attempt * 3000;
+        const waitMs = attempt * 4000;
         console.warn(`   ⚠️ [Transient Network Reset] ${err.message}. Retrying in ${waitMs / 1000}s (attempt ${attempt + 1}/${maxRetries})...`);
         await new Promise((r) => setTimeout(r, waitMs));
         continue;
